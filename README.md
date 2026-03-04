@@ -1,2 +1,2 @@
 # scraperq
-Web scraping &amp; rapor sistemi
+Web scraping &amp; report system
