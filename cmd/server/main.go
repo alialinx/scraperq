@@ -3,20 +3,19 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/alialin/scraperq/internal/models"
+	"github.com/alialin/scraperq/internal/queue"
+	"github.com/alialin/scraperq/internal/scraper"
+	"github.com/alialin/scraperq/internal/worker"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/alialin/scraperq/internal/models"
-	"github.com/alialin/scraperq/internal/queue"
-	"github.com/alialin/scraperq/internal/worker"
 )
 
 func main() {
-
-	q, err := queue.NewRedisQueue("localhost:6379")
+	q, err := queue.NewRedisQueue("localhost:6380")
 	if err != nil {
 		log.Fatalf("Redis bağlantı hatası: %v", err)
 	}
@@ -26,8 +25,8 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	pool := worker.NewPool(3, q)
-
+	s := scraper.NewHTTPScraper()
+	pool := worker.NewPool(3, q, s)
 	pool.Start(ctx)
 
 	log.Println("Worker pool başlatıldı (3 worker)")
@@ -57,8 +56,7 @@ func main() {
 		})
 	})
 
-
-	go http.ListenAndServe(":8080", nil)ak
+	go http.ListenAndServe(":8080", nil)
 	log.Println("API Server :8080 portunda çalışıyor")
 
 	quit := make(chan os.Signal, 1)
@@ -74,4 +72,3 @@ func main() {
 
 	log.Println("Temiz kapatıldı")
 }
-
