@@ -63,7 +63,7 @@ func (u *UserRepo) FindByAPIKey(ctx context.Context, apiKey string) (*models.Use
 		Scan(&user.ID, &user.Email, &user.PasswordHash, &user.APIKey, &user.IsActive, &user.DailyLimit, &user.MonthlyLimit, &user.CreatedAt)
 
 	if err == pgx.ErrNoRows {
-		return nil, ErrUserNotFound
+		return nil, ErrInvalidAPIKey
 	}
 
 	return &user, err
