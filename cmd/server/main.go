@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/alialin/scraperq/internal/config"
+	"github.com/alialin/scraperq/internal/database"
 	"github.com/alialin/scraperq/internal/models"
 	"github.com/alialin/scraperq/internal/queue"
 	"github.com/alialin/scraperq/internal/scraper"
@@ -26,6 +27,15 @@ func main() {
 	}
 	defer q.Close()
 	log.Println("Redis bağlantısı kuruldu")
+
+	db, err := database.NewDB(cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
+
+	if err != nil {
+		log.Fatalf("database error: %v", err)
+	}
+	defer db.Close()
+
+	log.Printf("Database connection: %v", db)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
