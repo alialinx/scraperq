@@ -14,17 +14,27 @@ type Config struct {
 	WorkerCount    int
 	MaxRetries     int
 	RequestTimeout int
+	DBHost         string
+	DBPort         string
+	DBUser         string
+	DBPassword     string
+	DBName         string
 }
 
 func Load() *Config {
 	godotenv.Load()
 	return &Config{
-		RedisAddr:      getEnv("REDIS_ADDR", "localhost:6380"),
+		RedisAddr:      getEnv("REDIS_ADDR", ""),
 		RedisPassword:  getEnv("REDIS_PASSWORD", ""),
 		ServerPort:     getEnv("SERVER_PORT", "8080"),
-		WorkerCount:    getEnvInt("WORKER_COUNT", 1),
+		WorkerCount:    getEnvInt("WORKER_COUNT", 3),
 		MaxRetries:     getEnvInt("MAX_RETRIES", 3),
 		RequestTimeout: getEnvInt("REQUEST_TIMEOUT", 10),
+		DBHost:         getEnv("POSTGRES_HOST", ""),
+		DBPort:         getEnv("POSTGRES_PORT", ""),
+		DBUser:         getEnv("POSTGRES_USER", ""),
+		DBPassword:     getEnv("POSTGRES_PASSWORD", ""),
+		DBName:         getEnv("POSTGRES_DB", ""),
 	}
 }
 
