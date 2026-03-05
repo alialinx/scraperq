@@ -1,8 +1,7 @@
 package config
 
-import "github.com/joho/godotenv"
-
 import (
+	"github.com/joho/godotenv"
 	"os"
 	"strconv"
 )
@@ -19,6 +18,7 @@ type Config struct {
 	DBUser         string
 	DBPassword     string
 	DBName         string
+	JWTSecret      string
 }
 
 func Load() *Config {
@@ -35,6 +35,7 @@ func Load() *Config {
 		DBUser:         getEnv("POSTGRES_USER", ""),
 		DBPassword:     getEnv("POSTGRES_PASSWORD", ""),
 		DBName:         getEnv("POSTGRES_DB", ""),
+		JWTSecret:      getEnv("JWT_SECRET", ""),
 	}
 }
 

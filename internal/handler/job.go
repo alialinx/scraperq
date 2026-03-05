@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/alialin/scraperq/internal/models"
@@ -34,8 +35,12 @@ func (h *JobHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	for _, url := range req.URLs {
 
 		job := models.NewJob(url)
+		job.UserID = "5c1542bc-e8aa-478d-ba9f-25bd4cacd778"
+		err := h.jobRepo.Create(r.Context(), job)
+		if err != nil {
+			log.Printf("DB create error: %v", err)
+		}
 
-		h.jobRepo.Create(r.Context(), job)
 		h.queue.Enqueue(r.Context(), job)
 
 		jobIDs = append(jobIDs, job.ID)
