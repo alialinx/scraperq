@@ -12,12 +12,13 @@ type RedisQueue struct {
 	client *redis.Client
 }
 
-func NewRedisQueue(addr string) (*RedisQueue, error) {
+func NewRedisQueue(addr string, password string) (*RedisQueue, error) {
 
 	// Burada oluşturduğumuz struct ile redis üzerinde yeni bir client bağlantısı açıyoruz.
 
 	client := redis.NewClient(&redis.Options{
-		Addr: addr,
+		Addr:     addr,
+		Password: password,
 	}) // fonskiyonun aldığı adres ile redise bağlantı sağlıyoruz.
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
