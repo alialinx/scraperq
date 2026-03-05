@@ -20,7 +20,7 @@ func main() {
 	log.Printf("Config yüklendi: %d worker, Redis: %s, Port: %s",
 		cfg.WorkerCount, cfg.RedisAddr, cfg.ServerPort)
 
-	q, err := queue.NewRedisQueue(cfg.RedisAddr)
+	q, err := queue.NewRedisQueue(cfg.RedisAddr, cfg.RedisPassword)
 	if err != nil {
 		log.Fatalf("Redis bağlantı hatası: %v", err)
 	}
