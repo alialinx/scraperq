@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/alialin/scraperq/internal/config"
 	"github.com/alialin/scraperq/internal/models"
 	"github.com/alialin/scraperq/internal/queue"
 	"github.com/alialin/scraperq/internal/scraper"
@@ -15,21 +16,23 @@ import (
 )
 
 func main() {
-	q, err := queue.NewRedisQueue("localhost:6380")
+	cfg := config.Load()
+	log.Printf("Config yüklendi: %d worker, Redis: %s, Port: %s",
+		cfg.WorkerCount, cfg.RedisAddr, cfg.ServerPort)
+
+	q, err := queue.NewRedisQueue(cfg.RedisAddr)
 	if err != nil {
 		log.Fatalf("Redis bağlantı hatası: %v", err)
 	}
 	defer q.Close()
-
 	log.Println("Redis bağlantısı kuruldu")
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	s := scraper.NewHTTPScraper()
-	pool := worker.NewPool(3, q, s)
+	pool := worker.NewPool(cfg.WorkerCount, q, s)
 	pool.Start(ctx)
-
-	log.Println("Worker pool başlatıldı (3 worker)")
+	log.Printf("Worker pool başlatıldı (%d worker)", cfg.WorkerCount)
 
 	http.HandleFunc("/jobs", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -56,19 +59,15 @@ func main() {
 		})
 	})
 
-	go http.ListenAndServe(":8080", nil)
-	log.Println("API Server :8080 portunda çalışıyor")
+	go http.ListenAndServe(":"+cfg.ServerPort, nil)
+	log.Printf("API Server :%s portunda çalışıyor", cfg.ServerPort)
 
 	quit := make(chan os.Signal, 1)
-
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-
 	<-quit
 
 	log.Println("Kapatılıyor...")
 	cancel()
-
 	pool.Wait()
-
 	log.Println("Temiz kapatıldı")
 }
