@@ -44,7 +44,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(userRepo, cfg.JWTSecret)
 	jobHandler := handler.NewJobHandler(jobRepo, q)
 
-	mux := handler.SetupRoutes(authHandler, jobHandler)
+	mux := handler.SetupRoutes(authHandler, jobHandler, cfg.JWTSecret)
 
 	s := scraper.NewHTTPScraper()
 	pool := worker.NewPool(cfg.WorkerCount, q, s)

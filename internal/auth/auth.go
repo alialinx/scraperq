@@ -37,3 +37,9 @@ func GenerateToken(userID string, email string, secret string) (string, error) {
 
 	return tokenString, nil
 }
+
+func ValidateToken(tokenString string, secret string) (*jwt.Token, error) {
+	return jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+}
