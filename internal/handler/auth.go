@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/alialin/scraperq/internal/auth"
 	"github.com/alialin/scraperq/internal/models"
@@ -65,11 +66,21 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	refreshToken := auth.GenerateRefreshToken()
+	expireAt := time.Now().Add(7 * 24 * time.Hour)
+
+	err = h.repo.SaveRefreshToken(r.Context(), user.ID, refreshToken, expireAt)
+	if err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(models.AuthResponse{
-		Token:  token,
-		APIKey: user.APIKey,
+		Token:        token,
+		APIKey:       user.APIKey,
+		RefreshToken: refreshToken,
 	})
 }
 
@@ -102,12 +113,87 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "token error", http.StatusInternalServerError)
 		return
 	}
+	refreshToken := auth.GenerateRefreshToken()
+	expireAt := time.Now().Add(7 * 24 * time.Hour)
+
+	err = h.repo.SaveRefreshToken(r.Context(), user.ID, refreshToken, expireAt)
+	if err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(models.AuthResponse{
-		Token:  token,
-		APIKey: user.APIKey,
+		Token:        token,
+		APIKey:       user.APIKey,
+		RefreshToken: refreshToken,
+	})
+
+}
+
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+
+	var req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+	err := h.repo.RevokeRefreshToken(r.Context(), req.RefreshToken)
+	if err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "logged out"})
+}
+
+func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+
+	var req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	rt, err := h.repo.FindByRefreshToken(r.Context(), refreshToken)
+
+	if rt.IsRevoked == true {
+		http.Error(w, "refresh token is revoked", http.StatusUnauthorized)
+		return
+	}
+
+	if rt.ExpiresAt.Before(time.Now()) {
+		http.Error(w, "refresh token is expired", http.StatusUnauthorized)
+	}
+
+
+	if err != nil {
+		http.Error(w, "invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	email := h.repo.
+
+
+	token, err := auth.GenerateToken(rt.UserID,a,h.jwtSecret,)
+	if err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	newRefreshToken := auth.GenerateRefreshToken()
+	expireAt := time.Now().Add(7 * 24 * time.Hour)
+
+	err = h.repo.SaveRefreshToken(r.Context(), user.ID, newRefreshToken, expireAt)
+	if err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(models.AuthResponse{
+		Token:        token,
+		RefreshToken: newRefreshToken,
 	})
 
 }
