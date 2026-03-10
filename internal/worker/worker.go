@@ -2,26 +2,33 @@ package worker
 
 import (
 	"context"
-	"github.com/alialin/scraperq/internal/queue"
-	"github.com/alialin/scraperq/internal/scraper"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/alialin/scraperq/internal/queue"
+	"github.com/alialin/scraperq/internal/scraper"
 )
+
+type JobUpdater interface {
+	UpdateStatus(ctx context.Context, id string, status string, jobError string) error
+}
 
 type Pool struct {
 	size    int
 	queue   *queue.RedisQueue
 	scraper scraper.Scraper
+	jobRepo JobUpdater
 	wg      sync.WaitGroup
 }
 
-func NewPool(size int, q *queue.RedisQueue, s scraper.Scraper) *Pool {
+func NewPool(size int, q *queue.RedisQueue, s scraper.Scraper, jobRepo JobUpdater) *Pool {
 
 	return &Pool{
 		size:    size,
 		queue:   q,
 		scraper: s,
+		jobRepo: jobRepo,
 	}
 
 }
@@ -63,10 +70,12 @@ func (p *Pool) runWorker(ctx context.Context, id int) {
 				log.Printf("[Worker %d] HATA: %s → %v", id, job.URL, err)
 				job.Error = err.Error()
 				p.queue.Fail(ctx, job)
+				p.jobRepo.UpdateStatus(ctx, job.ID, "failed", err.Error())
 				continue
 			}
 			job.Result = result
 			job.Status = "completed"
+			p.jobRepo.UpdateStatus(ctx, job.ID, "completed", "")
 			p.queue.Complete(ctx, job)
 
 			log.Printf("[Worker %d] Tamamlandı: %s (status: %d, size: %d)",
