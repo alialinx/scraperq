@@ -34,8 +34,10 @@ func (h *JobHandler) CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	for _, url := range req.URLs {
 
+		userID := r.Context().Value("user_id").(string)
 		job := models.NewJob(url)
-		job.UserID = "5c1542bc-e8aa-478d-ba9f-25bd4cacd778"
+		job.UserID = userID
+
 		err := h.jobRepo.Create(r.Context(), job)
 		if err != nil {
 			log.Printf("DB create error: %v", err)
