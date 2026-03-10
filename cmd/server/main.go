@@ -47,7 +47,7 @@ func main() {
 	mux := handler.SetupRoutes(authHandler, jobHandler, cfg.JWTSecret)
 
 	s := scraper.NewHTTPScraper()
-	pool := worker.NewPool(cfg.WorkerCount, q, s)
+	pool := worker.NewPool(cfg.WorkerCount, q, s, jobRepo)
 	pool.Start(ctx)
 	log.Printf("Worker pool started (%d workers)", cfg.WorkerCount)
 
