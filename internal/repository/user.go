@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"time"
+
 	"github.com/alialin/scraperq/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -67,4 +69,38 @@ func (u *UserRepo) FindByAPIKey(ctx context.Context, apiKey string) (*models.Use
 	}
 
 	return &user, err
+}
+
+func (u *UserRepo) SaveRefreshToken(ctx context.Context, userID string, token string, expiresAt time.Time) error {
+
+	_, err := u.pool.Exec(ctx, "INSERT INTO refresh_tokens(user_id, token, expires_at) VALUES ($1, $2, $3)", userID, token, expiresAt)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (u *UserRepo) FindByRefreshToken(ctx context.Context, token string) (*models.RefreshToken, error) {
+	var rt models.RefreshToken
+
+	err := u.pool.QueryRow(ctx,
+		"SELECT id, user_id, token, expires_at, is_revoked FROM refresh_tokens WHERE token=$1", token).
+		Scan(&rt.ID, &rt.UserID, &rt.Token, &rt.ExpiresAt, &rt.IsRevoked)
+
+	if err == pgx.ErrNoRows {
+		return nil, ErrUserNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &rt, nil
+}
+
+func (u *UserRepo) RevokeRefreshToken(ctx context.Context, token string) error {
+	_, err := u.pool.Exec(ctx, "UPDATE refresh_tokens SET is_revoked=true WHERE token=$1", token)
+	return err
 }
